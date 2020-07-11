@@ -1,67 +1,78 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const Campsite = require('../models/campsite');
 
 const campsiteRouter = express.Router();
 
 campsiteRouter.use(bodyParser.json());
 
-var add = (
-    function () {
-        var counter = 0;
-        return function () {
-            counter +=1; 
-            return counter;
-        }
-    }
-)();
-
-//CAMPSITES TOP ROUTE
 campsiteRouter.route('/')
-//catch-all for all http verbs
-.all((req, res, next) => {
-    res.statusCode = 200;
-
-    res.setHeader('Content-Type', 'text/plain');
-    //Pass control of application routing to next relevant routing method after this 1.
-    console.log(add());
-    next(); //Will continue to get or post etc below depending on req
+.get((req, res, next) => {
+    Campsite.find()
+    .then(campsites => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(campsites);
+    })
+    .catch(err => next(err));
 })
-.get((req, res) => {
-    //Status code & headers already set by app.all method.
-    res.end('Will send all the campsites to you');
-})
-//Post typically carry info in body of message. Body parser will take the prop and auto set it up as prop of request.body object.
-.post((req, res) => {
-    res.end(`Will add the campsite: ${req.body.name} with description: ${req.body.description}`);
+.post((req, res, next) => {
+    Campsite.create(req.body)
+    .then(campsite => {
+        console.log('Campsite Created ', campsite);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(campsite);
+    })
+    .catch(err => next(err));
 })
 .put((req, res) => {
     res.statusCode = 403;
     res.end('PUT operation not supported on /campsites');
 })
-.delete((req, res) => {
-    res.end('Deleting all campsites');
+.delete((req, res, next) => {
+    Campsite.deleteMany()
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
 
-//CAMPSITES DYNAMIC ROUTE
 campsiteRouter.route('/:campsiteId')
-.all((req, res, next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();
-})
-.get((req, res) => {
-    res.end(`Will send campsite ${req.params.campsiteId} to you`)
+.get((req, res, next) => {
+    Campsite.findById(req.params.campsiteId)
+    .then(campsite => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(campsite);
+    })
+    .catch(err => next(err));
 })
 .post((req, res) => {
-    res.end(`Will add the campsite: ${req.body.name} with description: ${req.body.description}`)
-})
-.put((req, res) => {
     res.statusCode = 403;
-    res.end('PUT operation not supported on /campsites/:campsiteId')
+    res.end(`POST operation not supported on /campsites/${req.params.campsiteId}`);
 })
-.delete((req, res) => {
-    res.end(`Deleting campsite with id: ${req.params.campsiteId}`)
+.put((req, res, next) => {
+    Campsite.findByIdAndUpdate(req.params.campsiteId, {
+        $set: req.body
+    }, { new: true })
+    .then(campsite => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(campsite);
+    })
+    .catch(err => next(err));
+})
+.delete((req, res, next) => {
+    Campsite.findByIdAndDelete(req.params.campsiteId)
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
-
 
 module.exports = campsiteRouter;
