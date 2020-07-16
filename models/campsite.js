@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+//Loads new currency type into mongoose so it's useable
 require('mongoose-currency').loadType(mongoose);
 const Currency = mongoose.Types.Currency;
 

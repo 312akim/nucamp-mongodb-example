@@ -1,3 +1,4 @@
+//Handles GET, PUT, POST, DELETE Endpoints for any path that begins with /campsites
 const express = require('express');
 const bodyParser = require('body-parser');
 const Campsite = require('../models/campsite');
@@ -13,16 +14,21 @@ campsiteRouter.route('/')
     .then(campsites => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
-        res.json(campsites);
+        //Sends json data to client in reponse stream & auto close stream afterward
+        res.json(campsites); 
     })
-    .catch(err => next(err));
+    //Pass off error to overall error handler for express app
+    .catch(err => next(err)); 
 })
 .post((req, res, next) => {
-    Campsite.create(req.body)
-    .then(campsite => {
+    //Mongoose Campsite Schema checks for fields
+    //body-parser middleware parses this into useable format
+    Campsite.create(req.body) //create method returns promise. Finds all docs madde with Campsite Model
+    .then(campsite => { //Holds info about document posted
         console.log('Campsite Created ', campsite);
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
+        //Send info about posted doc to client
         res.json(campsite);
     })
     .catch(err => next(err));
@@ -33,6 +39,7 @@ campsiteRouter.route('/')
 })
 .delete((req, res, next) => {
     Campsite.deleteMany()
+    //Info of how many docs were deleted
     .then(response => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
@@ -44,6 +51,7 @@ campsiteRouter.route('/')
 //CAMPSITES DYNAMIC ROUTE
 campsiteRouter.route('/:campsiteId')
 .get((req, res, next) => {
+    //Pass id stored by route parameter, passed from client by user
     Campsite.findById(req.params.campsiteId)
     .then(campsite => {
         res.statusCode = 200;
@@ -63,6 +71,7 @@ campsiteRouter.route('/:campsiteId')
     .then(campsite => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
+        //Send doc back to client
         res.json(campsite);
     })
     .catch(err => next(err));
