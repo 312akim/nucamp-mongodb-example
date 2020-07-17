@@ -38,32 +38,43 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser("12345-67890-12345-12345"));
 
 //Custom authentication middleware
 function auth(req, res, next) {
-  console.log(req.headers);
-  const authHeader = req.headers.authorization;
-  //If no authentication received
-  if (!authHeader) {
-    const err = new Error('You are not authenticated!');
-    //Lets client know server is requesting authentication & method being requested is basic
-    res.setHeader('WWW-Authenticate', 'Basic');
-    err.status = 401;
-    //Pass error message to Express to send message & authentication request back to client
-    return next(err);
-  }
-              //Parse, format & decode from base64. Final result auth = ["admin", "password"]
-  const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-  const user = auth[0];
-  const pass = auth[1];
-  if (user === 'admin' && pass === 'password') {
-    return next(); //authorized
+  if (!req.signedCookies.user) { //.signCookies prop provided by cookieParser. False if not properly signed
+    const authHeader = req.headers.authorization;
+    //If no authentication received
+    if (!authHeader) {
+      const err = new Error('You are not authenticated!');
+      //Lets client know server is requesting authentication & method being requested is basic
+      res.setHeader('WWW-Authenticate', 'Basic');
+      err.status = 401;
+      //Pass error message to Express to send message & authentication request back to client
+      return next(err);
+    }
+    //Parse, format & decode from base64. Final result auth = ["admin", "password"]
+    const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
+    const user = auth[0];
+    const pass = auth[1];
+    if (user === 'admin' && pass === 'password') {
+              //cookieName//value//option: object with config values. Use secret key from cookieParser to create signed cookie
+      res.cookie('user', 'admin', {signed: true}); //res.cookie method is part of express response objects api. creates cookie & sets up servers res to client
+      return next(); //authorized
+    } else {
+      const err = new Error('You are not authenticated!');
+      res.setHeader('WWW-Authenticate', 'Basic');
+      err.status = 401;
+      return next(err);
+    }
   } else {
-    const err = new Error('You are not authenticated!');
-    res.setHeader('WWW-Authenticate', 'Basic');
-    err.status = 401;
-    return next(err);
+    if (req.signedCookies.user === 'admin') {
+      return next();
+    } else {
+      const err = new Error('You are not authenticated!');
+      err.status = 401;
+      return next(err);
+    }
   }
 }
 
