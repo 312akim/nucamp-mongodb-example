@@ -7,8 +7,16 @@ const router = express.Router();
 
 
 /* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
+router.get('/', authenticate.verifyUser, authenticate.verifyAdmin, function(req, res, next) {
+  User.find()
+  .then(users => {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    //Sends json data to client in reponse stream & auto close stream afterward
+    res.json(users); 
+})
+//Pass off error to overall error handler for express app
+.catch(err => next(err)); 
 });
 
 router.post('/signup', (req, res) => {
