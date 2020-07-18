@@ -3,6 +3,9 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const session = require('express-session');
+//Calling returned function from require function
+const FileStore = require('session-file-store')(session);
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -26,7 +29,7 @@ connect.then(() => console.log('Connected correctly to server'),
 //Alternative to catch method, 2nd optional arg to .then method
   err => console.log(err) 
 );
-// ** End 
+// ** End
 
 var app = express();
 
@@ -38,11 +41,23 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser("12345-67890-12345-12345"));
+
+//Cookie parser conflicts with express sessions
+//app.use(cookieParser('12345-67890-12345-12345'));
+
+app.use(session({
+  name: 'session-id',
+  secret: '12345-67890-12345-12345', //Signs with this string
+  saveUninitialized: false, //Ensures new empty sessions are not saved
+  resave: false, //Once session is created, updated & saved, it will continue to save on requests, even if no updates. Keeps session active/not deleted
+  store: new FileStore() //Create new filestore as an object to save session info to hard drive
+}));
 
 //Custom authentication middleware
 function auth(req, res, next) {
-  if (!req.signedCookies.user) { //.signCookies prop provided by cookieParser. False if not properly signed
+  console.log(req.session); //Created by express session
+
+  if (!req.session.user) {
     const authHeader = req.headers.authorization;
     //If no authentication received
     if (!authHeader) {
@@ -59,7 +74,7 @@ function auth(req, res, next) {
     const pass = auth[1];
     if (user === 'admin' && pass === 'password') {
               //cookieName//value//option: object with config values. Use secret key from cookieParser to create signed cookie
-      res.cookie('user', 'admin', {signed: true}); //res.cookie method is part of express response objects api. creates cookie & sets up servers res to client
+      req.session.user = 'admin'; //Sets username as admin in session
       return next(); //authorized
     } else {
       const err = new Error('You are not authenticated!');
@@ -68,7 +83,7 @@ function auth(req, res, next) {
       return next(err);
     }
   } else {
-    if (req.signedCookies.user === 'admin') {
+    if (req.session.user === 'admin') {
       return next();
     } else {
       const err = new Error('You are not authenticated!');
