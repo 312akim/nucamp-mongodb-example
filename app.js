@@ -14,6 +14,7 @@ const partnerRouter = require('./routes/partnerRouter');
 
 // ** Establishes connection to MongoDB server
 const mongoose = require('mongoose');
+const e = require('express');
 
 const url = config.mongoUrl;
 const connect = mongoose.connect(url, {
@@ -31,6 +32,17 @@ connect.then(() => console.log('Connected correctly to server'),
 // ** End
 
 var app = express();
+
+//Catches all requests to any server. Preventing any connection to unsecure http server
+app.all('*', (req, res, next) => {
+  //if https, req.secure default is true
+  if (req.secure) {
+    return next();
+  } else {
+    console.log(`Redirecting to: https://${req.hostname}:${app.get('secPort')}${req.url}`);
+    res.redirect(301, `https://${req.hostname}:${app.get('secPort')}${req.url}`)
+  }
+})
 
 
 // view engine setup
