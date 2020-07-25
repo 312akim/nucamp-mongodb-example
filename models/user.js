@@ -8,9 +8,11 @@ const userSchema = new Schema({
         default: ''
     },
     lastname: {
-    type: String,
+        type: String,
         default: ''
     },
+    //If setting only type, if more, need to explicitly set
+    facebookId: String,
     admin: {
         type: Boolean,
         default: false
